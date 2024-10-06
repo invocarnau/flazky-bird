@@ -25,7 +25,7 @@ pub struct TraceItem {
     pub data: Vec<u8>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, PartialEq)]
 pub enum Action {
     NewPlay,
     Jump,
@@ -129,8 +129,9 @@ impl FlazkyBird {
                 action: Action::CheckCollisionAndMovePipes,
                 data: delta_seconds.to_le_bytes().to_vec(),
             };
-            for b in rand.iter() {
-                trace.data.push(*b as u8);
+            let rand_bytes: Vec<u8> = rand.iter().map(|&x| x as u8).collect();
+            for b in &rand_bytes {
+                trace.data.push(*b);
             }
             self.current_treacer.push(trace);
         }

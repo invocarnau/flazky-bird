@@ -1,0 +1,17 @@
+[package]
+name = "prover-host"
+version = "0.0.1"
+edition = "2021"
+publish = false
+
+[dependencies]
+clap = { version = "4.5.7", features = ["derive", "env"] }
+sp1-sdk = "2.0.0"
+eyre = "0.6"
+tokio = { version = "1.21", default-features = false, features = [
+    "rt",
+    "rt-multi-thread",
+] }
+
+[build-dependencies]
+sp1-build = "2.0.0"

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use rand::Rng;
 use bevy::math::UVec2;
-use flazky_bird_lib::{FlazkyBird};
+use flazky_bird_lib::FlazkyBird;
 use bincode;
 use std::fs::File;
 use std::io::Write;
