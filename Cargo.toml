@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "game",
+    "logic",
+    "prover/client",
+    "prover/host",
+]
