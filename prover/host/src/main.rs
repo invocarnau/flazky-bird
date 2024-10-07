@@ -6,15 +6,15 @@ use sp1_sdk::{SP1Proof, HashableKey, utils, ProverClient, SP1Stdin, SP1ProofWith
 #[derive(Parser, Debug)]
 struct Args {
     #[clap(long)]
-    file: string,
+    file: String,
 }
 
-const ELF_BLOCK_AGGREGATION: &[u8] = include_bytes!("../../../../elf/block-aggregation");
+const ELF_FLAZKY_BIRD: &[u8] = include_bytes!("../../../elf/flazky-bird");
 
 #[tokio::main]
 async fn main() -> eyre::Result<()> {
     // Intialize the environment variables.
-    dotenv::dotenv().ok();
+    // dotenv::dotenv().ok();
 
     // // Fallback to 'info' level if RUST_LOG is not set
     // if std::env::var("RUST_LOG").is_err() {
@@ -30,6 +30,7 @@ async fn main() -> eyre::Result<()> {
     let trace_data = fs::read(trace_file)?;
 
     let client = ProverClient::new();
+    let (pk, vk) = client.setup(ELF_FLAZKY_BIRD);
     let mut stdin = SP1Stdin::new();
     stdin.write_vec(trace_data);
     let (mut public_values, execution_report) =

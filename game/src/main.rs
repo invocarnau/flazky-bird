@@ -6,6 +6,13 @@ use bincode;
 use std::fs::File;
 use std::io::Write;
 
+
+
+#[derive(Component)]
+struct GameLogic {
+    flazky_bird: FlazkyBird,
+}
+
 #[derive(Component)]
 struct Background;
 
@@ -183,7 +190,9 @@ fn setup(
         last: 2,
         speed: 0.,
     };
-    commands.spawn(FlazkyBird::new(false));
+    commands.spawn(GameLogic {
+        flazky_bird: FlazkyBird::new(false),
+    });
 
     commands.spawn((
         SpriteSheetBundle {
@@ -272,18 +281,18 @@ fn animate_press_space(
 
 fn physics(
     time: Res<Time>,
-    mut flazky_bird_query: Query<&mut FlazkyBird>,
+    mut game_logic_query: Query<&mut GameLogic>,
     mut bird_query: Query<&mut Transform, (With<BirdAnimationIndices>, Without<Pipes>)>,
     mut ev_game_over: EventWriter<GameOverEvent>,
 ) {
     let mut bird = bird_query.single_mut();
-    let mut flazky = flazky_bird_query.single_mut();
-    if flazky.apply_physics(time.delta_seconds()) {
+    let mut gl = game_logic_query.single_mut();
+    if gl.flazky_bird.apply_physics(time.delta_seconds()) {
         ev_game_over.send(GameOverEvent());
     }
-    let bird_position = flazky.bird_position();
-    bird.translation.y = bird_position.translation.y;
-    bird.rotation = bird_position.rotation;
+    let bird_position = gl.flazky_bird.bird_position();
+    bird.translation.y = bird_position.y;
+    // bird.rotation = bird_position.rotation;
 }
 
 fn game_over_event(
@@ -295,7 +304,7 @@ fn game_over_event(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut ev_game_over: EventReader<GameOverEvent>,
-    flazky_bird_query: Query<&mut FlazkyBird>,
+    game_logic_query: Query<&mut GameLogic>,
 ) {
     for _ in ev_game_over.read() {
         game_over.game_over = true;
@@ -309,9 +318,9 @@ fn game_over_event(
         }
     }
 
-    let flazky = flazky_bird_query.single();
-    let high_score_treacer = flazky.get_high_score_treacer();
-    let high_score = flazky.get_high_score();
+    let gl = game_logic_query.single();
+    let high_score_treacer = gl.flazky_bird.get_high_score_treacer();
+    let high_score = gl.flazky_bird.get_high_score();
     let file_name = format!("trace_{}.bin", high_score);
     let mut file = File::create(file_name).unwrap();
     let serialized = bincode::serialize(&high_score_treacer).unwrap();
@@ -321,10 +330,10 @@ fn game_over_event(
 fn display_score(
     mut score: ResMut<Score>,
     mut sprites: Query<&mut Sprite, With<ScoreDisplay>>,
-    flazky_bird_query: Query<&mut FlazkyBird>,
+    game_logic_query: Query<&mut GameLogic>,
 ) {
-    let mut current_score = flazky_bird_query.single().score();
-    score.value = flazky_bird_query.single().score();
+    let mut current_score = game_logic_query.single().flazky_bird.score();
+    score.value = current_score;
     // if score.is_changed() {
     //     return;
     // }
@@ -360,7 +369,7 @@ fn jump(
     mut game_over: ResMut<GameState>,
     mut pipe_query: Query<&mut Transform, (Without<BirdAnimationIndices>, With<Pipes>)>,
     mut bird_query: Query<&mut Transform, (With<BirdAnimationIndices>, Without<Pipes>)>,
-    mut flazky_bird_query: Query<&mut FlazkyBird>,
+    mut game_logic_query: Query<&mut GameLogic>,
     mut game_over_and_space_query: Query<
         &mut Visibility,
         Or<(With<GameOverDisplay>, With<PressSpace>)>,
@@ -369,11 +378,11 @@ fn jump(
     if input.just_pressed(KeyCode::Space) {
         if !game_over.game_over {
             let mut bird = bird_query.single_mut();
-            let mut flazky = flazky_bird_query.single_mut();
-            flazky.jump();
-            let bird_position = flazky.bird_position();
-            bird.translation.y = bird_position.translation.y;
-            bird.rotation = bird_position.rotation;
+            let mut gl = game_logic_query.single_mut();
+            gl.flazky_bird.jump();
+            let bird_position = gl.flazky_bird.bird_position();
+            bird.translation.y = bird_position.y;
+            // bird.rotation = bird_position.rotation;
             commands.spawn(AudioBundle {
                 source: asset_server.load("audio/wing.ogg"),
                 settings: PlaybackSettings::DESPAWN,
@@ -382,29 +391,29 @@ fn jump(
         } else {
             if game_over.first_start {
                 game_over.first_start = false;
-                let mut flazky = flazky_bird_query.single_mut();
+                let mut gl = game_logic_query.single_mut();
                 let mut rand = [0; 5];
                 let mut rng = rand::thread_rng();
                 for i in 0..rand.len() {
                     rand[i] = rng.gen_range(-200..75);
                 }
-                flazky.new_play(rand);
+                gl.flazky_bird.new_play(rand);
             } else {
                 let mut bird = bird_query.single_mut();
-                let mut flazky = flazky_bird_query.single_mut();
+                let mut gl = game_logic_query.single_mut();
                 let mut rand = [0; 5];
                 let mut rng = rand::thread_rng();
                 for i in 0..rand.len() {
                     rand[i] = rng.gen_range(-200..75);
                 }
-                flazky.new_play(rand);
-                let bird_position = flazky.bird_position();
-                bird.translation.y = bird_position.translation.y;
-                bird.rotation = bird_position.rotation;
+                gl.flazky_bird.new_play(rand);
+                let bird_position = gl.flazky_bird.bird_position();
+                bird.translation.y = bird_position.y;
+                // bird.rotation = bird_position.rotation;
                 let i = 0;
-                let pipe_positions = flazky.get_pipe_positions();
+                let pipe_positions = gl.flazky_bird.get_pipe_positions();
                 for mut pipe in pipe_query.iter_mut() {
-                    pipe.translation.x = pipe_positions[i].translation.x;
+                    pipe.translation.x = pipe_positions[i].x;
                 }
             }
 
@@ -418,11 +427,11 @@ fn jump(
 
 fn move_bg(
     time: Res<Time>,
-    flazky_bird_query: Query<&mut FlazkyBird>,
+    game_logic_query: Query<&mut GameLogic>,
     mut bg_query: Query<&mut Transform, With<Background>>,
 ) {
     let delta_seconds = time.delta_seconds();
-    let score = flazky_bird_query.single().score();
+    let score = game_logic_query.single().flazky_bird.score();
     for mut transform in bg_query.iter_mut() {
         transform.translation.x -= delta_seconds * (100. + score.min(100) as f32);
         if transform.translation.x <= -288. {
@@ -433,10 +442,10 @@ fn move_bg(
 
 fn move_base(
     time: Res<Time>,
-    flazky_bird_query: Query<&mut FlazkyBird>,
+    game_logic_query: Query<&mut GameLogic>,
     mut base_query: Query<&mut Transform, With<Base>>,
 ) {
-    let score = flazky_bird_query.single().score();
+    let score = game_logic_query.single().flazky_bird.score();
     let delta_seconds = time.delta_seconds();
     for mut transform in base_query.iter_mut() {
         transform.translation.x -= delta_seconds * 2. * (100. + score.min(100) as f32);
@@ -449,19 +458,19 @@ fn move_base(
 fn move_pipes_and_game_logic(
     time: Res<Time>,
     mut pipe_query: Query<&mut Transform, (Without<BirdAnimationIndices>, With<Pipes>)>,
-    mut flazky_bird_query: Query<&mut FlazkyBird>,
+    mut game_logic_query: Query<&mut GameLogic>,
     mut ev_game_over: EventWriter<GameOverEvent>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
 ) {
-    let mut flazky = flazky_bird_query.single_mut();
+    let mut gl = game_logic_query.single_mut();
     let delta_seconds = time.delta_seconds();
     let mut rand = [0; 5];
     let mut rng = rand::thread_rng();
     for i in 0..rand.len() {
         rand[i] = rng.gen_range(-200..75);
     }
-    let (game_over, level_up) = flazky.check_collision_and_move_pipes(delta_seconds, rand);
+    let (game_over, level_up) = gl.flazky_bird.check_collision_and_move_pipes(delta_seconds, rand);
     if game_over {
         ev_game_over.send(GameOverEvent());
     }
@@ -473,8 +482,9 @@ fn move_pipes_and_game_logic(
         });
     }
     // update pipe graphics
-    let pipe_positions = flazky.get_pipe_positions();
+    let pipe_positions = gl.flazky_bird.get_pipe_positions();
     for (i, mut pipe) in pipe_query.iter_mut().enumerate() {
-        pipe.translation = pipe_positions[i].translation;
+        pipe.translation.x = pipe_positions[i].x;
+        pipe.translation.y = pipe_positions[i].y;
     }
 }

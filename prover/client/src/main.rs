@@ -48,6 +48,6 @@ pub fn main() {
    }
     
     // Commit
-    let high_score = game.get_high_score();
+    let high_score = game.score();
     sp1_zkvm::io::commit(&high_score);
 }
