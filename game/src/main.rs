@@ -13,6 +13,9 @@ struct GameLogic {
     flazky_bird: FlazkyBird,
 }
 
+#[derive(Component, Deref, DerefMut)]
+struct GameLogicTimer(Timer);
+
 #[derive(Component)]
 struct Background;
 
@@ -192,6 +195,7 @@ fn setup(
     };
     commands.spawn(GameLogic {
         flazky_bird: FlazkyBird::new(false),
+        GameLogicTimer(Timer::from_seconds(0.03, TimerMode::Repeating)), // ~30 fps
     });
 
     commands.spawn((
@@ -281,12 +285,16 @@ fn animate_press_space(
 
 fn physics(
     time: Res<Time>,
-    mut game_logic_query: Query<&mut GameLogic>,
+    mut game_logic_query: Query<&mut GameLogicTimer, GameLogic>,
     mut bird_query: Query<&mut Transform, (With<BirdAnimationIndices>, Without<Pipes>)>,
     mut ev_game_over: EventWriter<GameOverEvent>,
 ) {
+    let (mut gl, mut timer) = game_logic_query.single_mut();
+    timer.tick(time.delta());
+    if !timer.just_finished() {
+        return;
+    }
     let mut bird = bird_query.single_mut();
-    let mut gl = game_logic_query.single_mut();
     if gl.flazky_bird.apply_physics(time.delta_seconds()) {
         ev_game_over.send(GameOverEvent());
     }
@@ -369,7 +377,7 @@ fn jump(
     mut game_over: ResMut<GameState>,
     mut pipe_query: Query<&mut Transform, (Without<BirdAnimationIndices>, With<Pipes>)>,
     mut bird_query: Query<&mut Transform, (With<BirdAnimationIndices>, Without<Pipes>)>,
-    mut game_logic_query: Query<&mut GameLogic>,
+    mut game_logic_query: Query<&mut GameLogic, GameLogicTimer>,
     mut game_over_and_space_query: Query<
         &mut Visibility,
         Or<(With<GameOverDisplay>, With<PressSpace>)>,
