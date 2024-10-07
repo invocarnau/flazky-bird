@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 use bincode::serialize;
 
-const GRAVITY: f32 = -9.81;
+const GRAVITY: f32 = -30.;
 const WINDOW_Y: f32 = 512.;
 const BIRD_WIDTH: f32 = 20.;
 const BIRD_HEIGHT: f32 = 32.;
@@ -103,10 +103,10 @@ impl FlazkyBird {
             });
         }
         if self.bird.position.y < WINDOW_Y / 2. {
-            if self.bird.speed > 2. {
-                self.bird.speed = 6.;
+            if self.bird.speed > 7. {
+                self.bird.speed = 22.;
             } else {
-                self.bird.speed = 4.;
+                self.bird.speed = 14.;
             }
         }
     }

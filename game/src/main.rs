@@ -14,7 +14,13 @@ struct GameLogic {
 }
 
 #[derive(Component, Deref, DerefMut)]
-struct GameLogicTimer(Timer);
+struct GameLogicTimerPhysics(Timer);
+
+#[derive(Component, Deref, DerefMut)]
+struct GameLogicTimerJump(Timer);
+
+#[derive(Component, Deref, DerefMut)]
+struct GameLogicTimerCollisions(Timer);
 
 #[derive(Component)]
 struct Background;
@@ -193,10 +199,12 @@ fn setup(
         last: 2,
         speed: 0.,
     };
-    commands.spawn(GameLogic {
-        flazky_bird: FlazkyBird::new(false),
-        GameLogicTimer(Timer::from_seconds(0.03, TimerMode::Repeating)), // ~30 fps
-    });
+    commands.spawn((
+        GameLogic {flazky_bird: FlazkyBird::new(false)},
+        GameLogicTimerPhysics(Timer::from_seconds(0.03, TimerMode::Repeating)), // ~30 fps
+        GameLogicTimerJump(Timer::from_seconds(0.03, TimerMode::Repeating)), // ~30 fps
+        GameLogicTimerCollisions(Timer::from_seconds(0.03, TimerMode::Repeating)), // ~30 fps
+    ));
 
     commands.spawn((
         SpriteSheetBundle {
@@ -285,7 +293,7 @@ fn animate_press_space(
 
 fn physics(
     time: Res<Time>,
-    mut game_logic_query: Query<&mut GameLogicTimer, GameLogic>,
+    mut game_logic_query: Query<(&mut GameLogic,&mut GameLogicTimerPhysics)>,
     mut bird_query: Query<&mut Transform, (With<BirdAnimationIndices>, Without<Pipes>)>,
     mut ev_game_over: EventWriter<GameOverEvent>,
 ) {
@@ -295,7 +303,7 @@ fn physics(
         return;
     }
     let mut bird = bird_query.single_mut();
-    if gl.flazky_bird.apply_physics(time.delta_seconds()) {
+    if gl.flazky_bird.apply_physics(0.03+timer.elapsed_secs()) {
         ev_game_over.send(GameOverEvent());
     }
     let bird_position = gl.flazky_bird.bird_position();
@@ -377,16 +385,16 @@ fn jump(
     mut game_over: ResMut<GameState>,
     mut pipe_query: Query<&mut Transform, (Without<BirdAnimationIndices>, With<Pipes>)>,
     mut bird_query: Query<&mut Transform, (With<BirdAnimationIndices>, Without<Pipes>)>,
-    mut game_logic_query: Query<&mut GameLogic, GameLogicTimer>,
+    mut game_logic_query: Query<&mut GameLogic>,
     mut game_over_and_space_query: Query<
         &mut Visibility,
         Or<(With<GameOverDisplay>, With<PressSpace>)>,
     >,
 ) {
+    let mut gl = game_logic_query.single_mut();
     if input.just_pressed(KeyCode::Space) {
         if !game_over.game_over {
             let mut bird = bird_query.single_mut();
-            let mut gl = game_logic_query.single_mut();
             gl.flazky_bird.jump();
             let bird_position = gl.flazky_bird.bird_position();
             bird.translation.y = bird_position.y;
@@ -399,7 +407,6 @@ fn jump(
         } else {
             if game_over.first_start {
                 game_over.first_start = false;
-                let mut gl = game_logic_query.single_mut();
                 let mut rand = [0; 5];
                 let mut rng = rand::thread_rng();
                 for i in 0..rand.len() {
@@ -408,7 +415,6 @@ fn jump(
                 gl.flazky_bird.new_play(rand);
             } else {
                 let mut bird = bird_query.single_mut();
-                let mut gl = game_logic_query.single_mut();
                 let mut rand = [0; 5];
                 let mut rng = rand::thread_rng();
                 for i in 0..rand.len() {
@@ -466,19 +472,22 @@ fn move_base(
 fn move_pipes_and_game_logic(
     time: Res<Time>,
     mut pipe_query: Query<&mut Transform, (Without<BirdAnimationIndices>, With<Pipes>)>,
-    mut game_logic_query: Query<&mut GameLogic>,
+    mut game_logic_query: Query<(&mut GameLogic, &mut GameLogicTimerCollisions)>,
     mut ev_game_over: EventWriter<GameOverEvent>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
 ) {
-    let mut gl = game_logic_query.single_mut();
-    let delta_seconds = time.delta_seconds();
+    let (mut gl, mut timer) = game_logic_query.single_mut();
+    timer.tick(time.delta());
+    if !timer.just_finished() {
+        return;
+    }
     let mut rand = [0; 5];
     let mut rng = rand::thread_rng();
     for i in 0..rand.len() {
         rand[i] = rng.gen_range(-200..75);
     }
-    let (game_over, level_up) = gl.flazky_bird.check_collision_and_move_pipes(delta_seconds, rand);
+    let (game_over, level_up) = gl.flazky_bird.check_collision_and_move_pipes(0.03+timer.elapsed_secs(), rand);
     if game_over {
         ev_game_over.send(GameOverEvent());
     }
