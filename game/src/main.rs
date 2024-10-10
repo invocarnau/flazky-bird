@@ -1,10 +1,13 @@
 use bevy::prelude::*;
 use rand::Rng;
 use bevy::math::UVec2;
+use bevy_asset::AssetMetaCheck;
 use flazky_bird_lib::FlazkyBird;
-use bincode;
-use std::fs::File;
-use std::io::Write;
+// use bincode;
+// use std::fs::File;
+// use std::io::Write;
+use hex;
+use wasm_bindgen::prelude::*;
 
 
 
@@ -60,7 +63,6 @@ struct GravityTimer(Timer);
 struct BirdAnimationIndices {
     first: usize,
     last: usize,
-    speed: f64,
 }
 
 #[derive(Component, Deref, DerefMut)]
@@ -88,15 +90,23 @@ fn main() {
         .add_systems(Update, move_pipes_and_game_logic.run_if(game_is_active))
         .add_event::<GameOverEvent>()
         .add_systems(Update, game_over_event)
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "Rusty Bird".to_string(),
-                resolution: (WINDOW_X, WINDOW_Y).into(),
-                resizable: false,
-                ..default()
-            }),
-            ..default()
-        }))
+        .add_plugins(
+            DefaultPlugins
+                .set(
+                    WindowPlugin {
+                        primary_window: Some(Window {
+                            title: "Rusty Bird".to_string(),
+                            resolution: (WINDOW_X, WINDOW_Y).into(),
+                            resizable: false,
+                            ..default()
+                        }),
+                        ..default()
+                    }
+                ).set(AssetPlugin {
+                    meta_check: AssetMetaCheck::Never,
+                    ..default()
+                })
+        )
         .run();
 }
 
@@ -197,7 +207,6 @@ fn setup(
     let animation_indices = BirdAnimationIndices {
         first: 0,
         last: 2,
-        speed: 0.,
     };
     commands.spawn((
         GameLogic {flazky_bird: FlazkyBird::new(false)},
@@ -292,11 +301,15 @@ fn animate_press_space(
 }
 
 fn physics(
+    game_over: ResMut<GameState>,
     time: Res<Time>,
     mut game_logic_query: Query<(&mut GameLogic,&mut GameLogicTimerPhysics)>,
     mut bird_query: Query<&mut Transform, (With<BirdAnimationIndices>, Without<Pipes>)>,
     mut ev_game_over: EventWriter<GameOverEvent>,
 ) {
+    if game_over.game_over {
+        return;
+    }
     let (mut gl, mut timer) = game_logic_query.single_mut();
     timer.tick(time.delta());
     if !timer.just_finished() {
@@ -323,6 +336,22 @@ fn game_over_event(
     game_logic_query: Query<&mut GameLogic>,
 ) {
     for _ in ev_game_over.read() {
+        if !game_over.game_over {
+            let gl = game_logic_query.single();
+            let score = gl.flazky_bird.score();
+            let high_score = gl.flazky_bird.get_high_score();
+            if score == high_score && high_score > 0 {
+                alert("New high score! Go to logs to grab the trace");
+                let high_score_treacer = gl.flazky_bird.get_high_score_treacer();
+                // let file_name = format!("trace_{}.bin", high_score);
+                // let mut file = File::create(file_name).unwrap();
+                let serialized = bincode::serialize(&high_score_treacer).unwrap();
+                
+                println!("trace for score {}: {}", high_score, hex::encode(&serialized));
+                log(&format!("trace for score {}: {}", high_score, hex::encode(&serialized)));
+                // file.write_all(&serialized).unwrap();
+            }
+        }
         game_over.game_over = true;
         commands.spawn(AudioBundle {
             source: asset_server.load("audio/hit.ogg"),
@@ -333,14 +362,14 @@ fn game_over_event(
             *vis = Visibility::Visible;
         }
     }
+}
 
-    let gl = game_logic_query.single();
-    let high_score_treacer = gl.flazky_bird.get_high_score_treacer();
-    let high_score = gl.flazky_bird.get_high_score();
-    let file_name = format!("trace_{}.bin", high_score);
-    let mut file = File::create(file_name).unwrap();
-    let serialized = bincode::serialize(&high_score_treacer).unwrap();
-    file.write_all(&serialized).unwrap();
+// Import the `window.alert` function from the Web.
+#[wasm_bindgen]
+extern "C" {
+    fn alert(s: &str);
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
 }
 
 fn display_score(
@@ -379,10 +408,10 @@ fn display_score(
 }
 
 fn jump(
+    mut game_over: ResMut<GameState>,
     input: Res<ButtonInput<KeyCode>>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut game_over: ResMut<GameState>,
     mut pipe_query: Query<&mut Transform, (Without<BirdAnimationIndices>, With<Pipes>)>,
     mut bird_query: Query<&mut Transform, (With<BirdAnimationIndices>, Without<Pipes>)>,
     mut game_logic_query: Query<&mut GameLogic>,
@@ -470,6 +499,7 @@ fn move_base(
 }
 
 fn move_pipes_and_game_logic(
+    game_over: ResMut<GameState>,
     time: Res<Time>,
     mut pipe_query: Query<&mut Transform, (Without<BirdAnimationIndices>, With<Pipes>)>,
     mut game_logic_query: Query<(&mut GameLogic, &mut GameLogicTimerCollisions)>,
@@ -477,6 +507,9 @@ fn move_pipes_and_game_logic(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
 ) {
+    if game_over.game_over {
+        return;
+    }
     let (mut gl, mut timer) = game_logic_query.single_mut();
     timer.tick(time.delta());
     if !timer.just_finished() {

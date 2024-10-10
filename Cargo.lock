@@ -6696,10 +6696,13 @@ name = "rusty-bird"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy_asset",
  "bincode",
  "flazky-bird-lib",
+ "hex",
  "rand",
  "serde",
+ "wasm-bindgen",
 ]
 
 [[package]]
