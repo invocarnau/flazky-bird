@@ -75,6 +75,8 @@ struct GameOverEvent();
 const WINDOW_Y: f32 = 512.;
 const WINDOW_X: f32 = 800.;
 
+static mut HIGH_SCORE_TRACE: Vec<u8> = Vec::new();
+
 fn main() {
     App::new()
         .init_resource::<Score>()
@@ -350,6 +352,9 @@ fn game_over_event(
                 println!("trace for score {}: {}", high_score, hex::encode(&serialized));
                 log(&format!("trace for score {}: {}", high_score, hex::encode(&serialized)));
                 // file.write_all(&serialized).unwrap();
+                unsafe {
+                    HIGH_SCORE_TRACE = serialized;
+                }
             }
         }
         game_over.game_over = true;
@@ -362,14 +367,6 @@ fn game_over_event(
             *vis = Visibility::Visible;
         }
     }
-}
-
-// Import the `window.alert` function from the Web.
-#[wasm_bindgen]
-extern "C" {
-    fn alert(s: &str);
-    #[wasm_bindgen(js_namespace = console)]
-    fn log(s: &str);
 }
 
 fn display_score(
@@ -536,5 +533,20 @@ fn move_pipes_and_game_logic(
     for (i, mut pipe) in pipe_query.iter_mut().enumerate() {
         pipe.translation.x = pipe_positions[i].x;
         pipe.translation.y = pipe_positions[i].y;
+    }
+}
+
+// Import the `window.alert` function from the Web.
+#[wasm_bindgen]
+extern "C" {
+    fn alert(s: &str);
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
+}
+
+#[wasm_bindgen]
+pub fn get_hisghscore() -> Vec<u8> {
+    unsafe {
+        return HIGH_SCORE_TRACE.clone();
     }
 }

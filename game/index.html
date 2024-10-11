@@ -29,8 +29,41 @@
       }
     </style>
   </head>
-  <script type="module">
-    import init from './out/rusty-bird.js'
-    init()
-  </script>
+  <body>
+    <script type="module">
+      import init from './out/rusty-bird.js'
+      import {get_hisghscore} from './out/rusty-bird.js'
+
+      async function start() {
+        await init(); 
+      }
+
+      async function buttonClicked() {
+        var fromRust = await get_hisghscore("Button was clicked!");
+        console.log("highscore in JS realm: ", fromRust);
+
+        // Create a Blob from the data
+        const blob = new Blob([fromRust], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+
+        // Create a temporary anchor element to trigger the download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'flazkybird-highscore-trace.bin'; // Specify the file name
+        document.body.appendChild(a);
+        a.click(); // Programmatically click the anchor to trigger the download
+        document.body.removeChild(a); // Clean up
+        URL.revokeObjectURL(url); // Free up memory
+      }
+
+      // Attach event listener to the button after the DOM is loaded
+      document.addEventListener('DOMContentLoaded', () => {
+        const button = document.getElementById('myButton');
+        button.addEventListener('click', buttonClicked);
+      });
+
+      start();
+    </script>
+    <button id="myButton">Download highscore trace</button>
+  </body>
 </html>
