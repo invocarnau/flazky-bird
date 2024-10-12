@@ -1,10 +1,15 @@
 use std::fs;
 use std::io;
+use std::path::PathBuf; 
 use clap::Parser;
 use sp1_sdk::{SP1Proof, HashableKey, utils, ProverClient, SP1Stdin, SP1ProofWithPublicValues, SP1VerifyingKey};
 
 #[derive(Parser, Debug)]
 struct Args {
+    /// Whether or not to generate a proof.
+    #[arg(long, default_value_t = false)]
+    prove: bool,
+
     #[clap(long)]
     file: String,
 }
@@ -41,6 +46,21 @@ async fn main() -> eyre::Result<()> {
     );
     let prover_high_score = public_values.read::<u32>();
     println!("Prover high score: {}", prover_high_score);
+
+    if args.prove {
+        println!("Starting proof generation.");
+        let proof: SP1ProofWithPublicValues = client.prove(&pk, stdin.clone()).compressed().run().expect("Proving should work.");
+        println!("Proof generation finished.");
+
+        client.verify(&proof, &vk).expect("proof verification should succeed");
+        // Handle the result of the save operation
+        match proof.save(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(format!("../../proofs/high_score_{}.bin", prover_high_score))) {
+            Ok(_) => println!("Proof saved successfully."),
+            Err(e) => eprintln!("Failed to save proof: {}", e),
+        }
+
+        println!("Proof generated!");
+    }
 
     Ok(())
 }
