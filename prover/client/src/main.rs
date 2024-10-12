@@ -21,20 +21,22 @@ pub fn main() {
    for item in trace {
        match item.action {
            Action::NewPlay => {
-                let rand = bincode::deserialize::<[i32; 5]>(&item.data).unwrap();
+                let rand = i32::from_le_bytes(item.data); 
                 game.new_play(rand);
            }
            Action::Jump => {
                game.jump();
            }
            Action::ApplyPhysics => {
-                let delta_seconds = f32::from_le_bytes(item.data.try_into().unwrap());
-                game.apply_physics(delta_seconds);
+                let delta_seconds = f32::from_le_bytes(item.data);
+                if game.apply_physics(delta_seconds) {
+                    assert!(is_first_collision);
+                    is_first_collision = false;
+                }
            }
            Action::CheckCollisionAndMovePipes => {
-                let delta_seconds = f32::from_le_bytes(item.data[..4].try_into().unwrap());
-                let rand = bincode::deserialize::<[i32; 5]>(&item.data[4..]).unwrap();
-                let (collision, _) = game.check_collision_and_move_pipes(delta_seconds, rand);
+                let delta_seconds = f32::from_le_bytes(item.data);
+                let (collision, _) = game.check_collision_and_move_pipes(delta_seconds);
                 if collision {
                     assert!(is_first_collision);
                     is_first_collision = false;
