@@ -45,8 +45,10 @@ contract FlazkyBird is ERC721Enumerable {
         require(!nullifierMap[publicValues.nullifier], "nullifier already used");
 
         uint256 score = publicValues.score;
-        uint64 currentTokenID = uint64(totalSupply());
-        _safeMint(publicValues.player, ++currentTokenID);
+
+        // First tokenID is 1
+        uint64 currentTokenID = uint64(totalSupply()) + 1;
+        _safeMint(publicValues.player, currentTokenID);
 
         // Search what will be the next token ID
         uint256 previousTokenID = _previousTokenID;
