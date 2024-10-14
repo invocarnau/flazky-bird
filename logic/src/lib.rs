@@ -1,3 +1,4 @@
+use alloy_primitives::{Address};
 use serde::{Serialize, Deserialize};
 
 const GRAVITY: f32 = -30.;
@@ -7,6 +8,12 @@ const BIRD_HEIGHT: i32 = 32;
 const PIPE_WIDTH: f32 = 48.;
 const PIPE_HEIGHT: i32 = 316;
 const MAGIC_NUMBER: i32 = 435885720;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Input {
+    pub encoded_trace: Vec<u8>,
+    pub player: Address,
+}
 
 pub struct FlazkyBird {
     prover_mode: bool,
@@ -20,13 +27,13 @@ pub struct FlazkyBird {
     rand: i32,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TraceItem {
     pub action: Action,
     pub data: [u8; 4],
 }
 
-#[derive(Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Action {
     NewPlay,
     Jump,

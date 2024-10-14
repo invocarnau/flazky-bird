@@ -5,5 +5,7 @@ edition = "2021"
 publish = false
 
 [dependencies]
-serde = "1.0.200"
+alloy-primitives = {version = "0.8", features = ["serde"]}
+alloy-sol-types = { version = "0.8" }
+serde = { version = "1.0", default-features = false, features = ["derive"] }
 bincode = "1.3"
