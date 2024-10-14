@@ -2,7 +2,11 @@
 
 pragma solidity ^0.8.20;
 
-contract FlazkyBird {
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/utils/Base64.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+
+contract FlazkyBird is ERC721 {
     struct LeaderboardEntry {
         address player;
         uint256 score;
@@ -12,6 +16,10 @@ contract FlazkyBird {
     mapping(uint256 => LeaderboardEntry) public leaderboard;
     uint256 public leader;
     uint256 counter;
+
+    constructor() ERC721("FlazkyBird", "ZKB") {
+
+    }
 
     function addLeaderboardEntry(uint256 score, uint256 previous) public {
         // TODO: verify ZKP
@@ -40,6 +48,7 @@ contract FlazkyBird {
 
         // insert score
         leaderboard[counter] = LeaderboardEntry(msg.sender, score, next);
+        _safeMint(msg.sender, counter);
     }
 
     function getLeaderboard(uint256 from, uint256 items) public view returns (LeaderboardEntry[] memory, uint256 nextIndex) {
@@ -53,5 +62,26 @@ contract FlazkyBird {
             next = entries[i].next;
         }
         return (entries, next);
+    }
+
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        require(tokenId <= counter, "this NFT does not exist");
+        LeaderboardEntry memory nftData = leaderboard[tokenId];
+        
+        return string(
+            abi.encodePacked(
+                "data:application/json;base64,",
+                Base64.encode(
+                    bytes(
+                        abi.encodePacked(
+                            '{"name":"FlaZKy Bird score",',
+                            '"description": "NFT obtained playing FlaZKy bird and proving the score on-chain",',
+                            '"attributes": ["score": ', Strings.toString(nftData.score),'],',
+                            '"image":"https://toppng.com/uploads/preview/flappy-bird-pixel-art-flappy-bird-1156289438531sspmvwnk.png"}'
+                        )
+                    )
+                )
+            )
+        );
     }
 }

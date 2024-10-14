@@ -9,6 +9,7 @@ contract FlazkyBirdTest is Test {
     FlazkyBird public flazkyBird;
 
     function setUp() public {
+        vm.prank(address(0xf00));
         flazkyBird = new FlazkyBird();
     }
 
@@ -61,5 +62,6 @@ contract FlazkyBirdTest is Test {
         assertEq(leaderboard[5].player, player2);
         assertEq(leaderboard[5].score, 50);
         assertEq(leaderboard[5].next, 0);
+        string memory tokenURI = flazkyBird.tokenURI(1);
     }
 }
