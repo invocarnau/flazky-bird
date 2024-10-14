@@ -7,21 +7,36 @@ import "@openzeppelin/contracts/utils/Base64.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract FlazkyBird is ERC721 {
+    struct PublicValuesStruct {
+        address player;
+        uint256 score;
+        bytes32 nullifier;
+    }
+
     struct LeaderboardEntry {
         address player;
         uint256 score;
         uint256 next;
     }
 
+    address public verifier;
+    bytes32 public fibonacciProgramVKey;
+
+    mapping(bytes32 => bool) public nullifier;
     mapping(uint256 => LeaderboardEntry) public leaderboard;
     uint256 public leader;
     uint256 counter;
 
-    constructor() ERC721("FlazkyBird", "ZKB") {
+    constructor(address _verifier, bytes32 _vKey) ERC721("FlazkyBird", "ZKB") {
+        verifier = _verifier;
+        vKey = _vKey;
 
     }
 
-    function addLeaderboardEntry(uint256 score, uint256 previous) public {
+    function addLeaderboardEntry(bytes calldata _publicValues, bytes calldata _proofBytes, uint256 previous) public {
+        ISP1Verifier(verifier).verifyProof(vKey, _publicValues, _proofBytes);
+        PublicValuesStruct memory publicValues = abi.decode(_publicValues, (PublicValuesStruct));
+        uint256 score = publicValues.score;
         // TODO: verify ZKP
         counter++;
         uint256 next;
@@ -47,8 +62,8 @@ contract FlazkyBird is ERC721 {
         }
 
         // insert score
-        leaderboard[counter] = LeaderboardEntry(msg.sender, score, next);
-        _safeMint(msg.sender, counter);
+        leaderboard[counter] = LeaderboardEntry(publicValues.player, score, next);
+        _safeMint(publicValues.player, counter);
     }
 
     function getLeaderboard(uint256 from, uint256 items) public view returns (LeaderboardEntry[] memory, uint256 nextIndex) {
