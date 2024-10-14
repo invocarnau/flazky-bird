@@ -1,13 +1,35 @@
 #![no_main]
 sp1_zkvm::entrypoint!(main);
 
-use flazky_bird_lib::{FlazkyBird,TraceItem,Action};
+use flazky_bird_lib::{FlazkyBird,TraceItem,Action,Input};
 use bincode;
+use alloy_primitives::U256;
+use alloy_sol_types::sol;
+use serde::{Serialize, Deserialize};
+use tiny_keccak::{Keccak,Hasher};
+use alloy_sol_types::SolType;
+
+sol! {
+    #[derive(Debug, Serialize, Deserialize)]
+    struct PublicValuesStruct {
+        address player;
+        uint256 score;
+        bytes32 nullifier;
+    }
+}
 
 pub fn main() {
     // Read the input
-    let input = sp1_zkvm::io::read_vec();
-    let trace = bincode::deserialize::<Vec<TraceItem>>(&input).unwrap();
+    let input: Input = sp1_zkvm::io::read::<Input>();
+    let trace = bincode::deserialize::<Vec<TraceItem>>(&input.encoded_trace).unwrap();
+
+    // Generate nullifier
+    let mut output = [0u8; 32];
+    let mut hasher = Keccak::v256();
+    hasher.update(&input.encoded_trace);
+    hasher.finalize(&mut output);
+    let nullifier = output.into();
+
 
     // assert trace is valid
     assert!(trace.len() > 2);
@@ -49,7 +71,11 @@ pub fn main() {
        }
    }
     
-    // Commit
-    let high_score = game.score();
-    sp1_zkvm::io::commit(&high_score);
+    // Commit  
+    let public_values_solidity_encoded = PublicValuesStruct::abi_encode(&PublicValuesStruct {
+        score: U256::from(game.score()),
+        player: input.player,
+        nullifier,
+    });
+    sp1_zkvm::io::commit_slice(&public_values_solidity_encoded);
 }
