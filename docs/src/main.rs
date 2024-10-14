@@ -1,15 +1,13 @@
-use bevy::prelude::*;
-use rand::Rng;
 use bevy::math::UVec2;
+use bevy::prelude::*;
 use bevy_asset::AssetMetaCheck;
 use flazky_bird_lib::FlazkyBird;
+use rand::Rng;
 // use bincode;
 // use std::fs::File;
 // use std::io::Write;
 use hex;
 use wasm_bindgen::prelude::*;
-
-
 
 #[derive(Component)]
 struct GameLogic {
@@ -34,7 +32,6 @@ struct Base;
 #[derive(Component)]
 struct Pipes;
 
-
 #[derive(Component)]
 struct PressSpace;
 
@@ -55,7 +52,6 @@ struct GameState {
 #[derive(Component)]
 struct GameOverDisplay;
 
-
 #[derive(Component, Deref, DerefMut)]
 struct GravityTimer(Timer);
 
@@ -70,7 +66,6 @@ struct AnimationTimer(Timer);
 
 #[derive(Event)]
 struct GameOverEvent();
-
 
 const WINDOW_Y: f32 = 512.;
 const WINDOW_X: f32 = 800.;
@@ -94,20 +89,19 @@ fn main() {
         .add_systems(Update, game_over_event)
         .add_plugins(
             DefaultPlugins
-                .set(
-                    WindowPlugin {
-                        primary_window: Some(Window {
-                            title: "Rusty Bird".to_string(),
-                            resolution: (WINDOW_X, WINDOW_Y).into(),
-                            resizable: false,
-                            ..default()
-                        }),
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        title: "Rusty Bird".to_string(),
+                        resolution: (WINDOW_X, WINDOW_Y).into(),
+                        resizable: false,
                         ..default()
-                    }
-                ).set(AssetPlugin {
-                    meta_check: AssetMetaCheck::Never,
+                    }),
                     ..default()
                 })
+                .set(AssetPlugin {
+                    meta_check: AssetMetaCheck::Never,
+                    ..default()
+                }),
         )
         .run();
 }
@@ -206,14 +200,13 @@ fn setup(
 
     let layout = TextureAtlasLayout::from_grid(UVec2::new(34, 24), 3, 1, None, None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
-    let animation_indices = BirdAnimationIndices {
-        first: 0,
-        last: 2,
-    };
+    let animation_indices = BirdAnimationIndices { first: 0, last: 2 };
     commands.spawn((
-        GameLogic {flazky_bird: FlazkyBird::new(false)},
+        GameLogic {
+            flazky_bird: FlazkyBird::new(false),
+        },
         GameLogicTimerPhysics(Timer::from_seconds(0.03, TimerMode::Repeating)), // ~30 fps
-        GameLogicTimerJump(Timer::from_seconds(0.03, TimerMode::Repeating)), // ~30 fps
+        GameLogicTimerJump(Timer::from_seconds(0.03, TimerMode::Repeating)),    // ~30 fps
         GameLogicTimerCollisions(Timer::from_seconds(0.03, TimerMode::Repeating)), // ~30 fps
     ));
 
@@ -305,7 +298,7 @@ fn animate_press_space(
 fn physics(
     game_over: ResMut<GameState>,
     time: Res<Time>,
-    mut game_logic_query: Query<(&mut GameLogic,&mut GameLogicTimerPhysics)>,
+    mut game_logic_query: Query<(&mut GameLogic, &mut GameLogicTimerPhysics)>,
     mut bird_query: Query<&mut Transform, (With<BirdAnimationIndices>, Without<Pipes>)>,
     mut ev_game_over: EventWriter<GameOverEvent>,
 ) {
@@ -318,7 +311,7 @@ fn physics(
         return;
     }
     let mut bird = bird_query.single_mut();
-    if gl.flazky_bird.apply_physics(0.03+timer.elapsed_secs()) {
+    if gl.flazky_bird.apply_physics(0.03 + timer.elapsed_secs()) {
         ev_game_over.send(GameOverEvent());
     }
     let bird_position = gl.flazky_bird.bird_position();
@@ -343,15 +336,9 @@ fn game_over_event(
             let score = gl.flazky_bird.score();
             let high_score = gl.flazky_bird.get_high_score();
             if score == high_score && high_score > 0 {
-                alert("New high score! Go to logs to grab the trace");
+                alert(format!("New highscore: {}", high_score).as_str());
                 let high_score_treacer = gl.flazky_bird.get_high_score_treacer();
-                // let file_name = format!("trace_{}.bin", high_score);
-                // let mut file = File::create(file_name).unwrap();
                 let serialized = bincode::serialize(&high_score_treacer).unwrap();
-                
-                println!("trace for score {}: {}", high_score, hex::encode(&serialized));
-                log(&format!("trace for score {}: {}", high_score, hex::encode(&serialized)));
-                // file.write_all(&serialized).unwrap();
                 unsafe {
                     HIGH_SCORE_TRACE = serialized;
                 }
@@ -457,10 +444,7 @@ fn jump(
     }
 }
 
-fn move_bg(
-    time: Res<Time>,
-    mut bg_query: Query<&mut Transform, With<Background>>,
-) {
+fn move_bg(time: Res<Time>, mut bg_query: Query<&mut Transform, With<Background>>) {
     let delta_seconds = time.delta_seconds();
     for mut transform in bg_query.iter_mut() {
         transform.translation.x -= delta_seconds * 200.;
@@ -470,10 +454,7 @@ fn move_bg(
     }
 }
 
-fn move_base(
-    time: Res<Time>,
-    mut base_query: Query<&mut Transform, With<Base>>,
-) {
+fn move_base(time: Res<Time>, mut base_query: Query<&mut Transform, With<Base>>) {
     let delta_seconds = time.delta_seconds();
     for mut transform in base_query.iter_mut() {
         transform.translation.x -= delta_seconds * 200.;
@@ -500,7 +481,9 @@ fn move_pipes_and_game_logic(
     if !timer.just_finished() {
         return;
     }
-    let (game_over, level_up) = gl.flazky_bird.check_collision_and_move_pipes(0.03+timer.elapsed_secs());
+    let (game_over, level_up) = gl
+        .flazky_bird
+        .check_collision_and_move_pipes(0.03 + timer.elapsed_secs());
     if game_over {
         ev_game_over.send(GameOverEvent());
     }
