@@ -121,9 +121,9 @@ contract FlazkyBird is ERC721Enumerable {
                         abi.encodePacked(
                             '{"name":"FlaZKy Bird score",',
                             '"description": "NFT obtained playing FlaZKy bird and proving the score on-chain",',
-                            '"attributes": ["score": ',
+                            '"attributes": [{"trait_type": "score", "key":"score","value": ',
                             Strings.toString(nftData.score),
-                            "],",
+                            "}],",
                             '"image":"https://toppng.com/uploads/preview/flappy-bird-pixel-art-flappy-bird-1156289438531sspmvwnk.png"}'
                         )
                     )
