@@ -1,0 +1,9 @@
+[profile.default]
+optimizer = true
+optimizer_runs = 20_000
+
+[rpc_endpoints]
+sepolia = "${SEPOLIA_RPC_URL}"
+
+[etherscan]
+sepolia = { key = "${ETHERSCAN_API_KEY}" }
