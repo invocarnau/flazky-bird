@@ -23,7 +23,7 @@ contract DeploySepolia is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        bytes32 vkey = bytes32(type(uint256).max);
+        bytes32 vkey = bytes32(0x00d46e47dc204c9d22a872106269c07fab0001c502ff00a9c1480e4b056a89c5);
         ISP1Verifier sp1Gateway = ISP1Verifier(0x3B6041173B80E77f038f3F2C0f9744f04837185e);
         FlazkyBird flazkyBird = new FlazkyBird(sp1Gateway, vkey);
 

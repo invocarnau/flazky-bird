@@ -71,10 +71,6 @@ async fn main() -> eyre::Result<()> {
 
         client.verify(&proof, &vk).expect("proof verification should succeed");
         // Handle the result of the save operation
-        match proof.save(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(format!("../../proofs/flazky.bin"))) {
-            Ok(_) => println!("Proof saved successfully."),
-            Err(e) => eprintln!("Failed to save proof: {}", e),
-        }
         let public_values_solidity_encoded = proof.public_values.as_slice();
         let decoded_values = PublicValuesStruct::abi_decode(public_values_solidity_encoded, true).unwrap();
         let fixture = ProofFixture {
