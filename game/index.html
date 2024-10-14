@@ -4,13 +4,23 @@
     <style>
       body {
         margin: 0;
-        background: linear-gradient(-45deg, #a6a6a6, #5ac05a, #262626, #a6a6a6);
+        background: linear-gradient(-45deg, #a6a6a6, #5ac05a, #a6a6a6);
         background-size: 400% 400%;
         animation: gradient 15s ease infinite;
         height: 100vh;
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
+      }
+      #hori {
+        display: flex;
+        flex-direction: row;
+      }
+      #vert {
+        display: flex;
+        flex-direction: column;
+        margin: 0 100px;
       }
       canvas {
         background-color: white;
@@ -64,6 +74,21 @@
 
       start();
     </script>
-    <button id="myButton">Download highscore trace</button>
+    <div id="hori">
+      <div id="vert">
+        <h3>1. Play</h3>
+        <p>play the game until you are happy with your highscore</p>
+      </div>
+
+      <div id="vert">
+        <h3>2. Download</h3>
+        <button id="myButton">Download highscore trace</button>
+      </div>
+
+      <div id="vert">
+        <h3>3. Proof</h3>
+        <p>Go to <a href="https://github.com/invocarnau/flazky-bird">the repo</a> for more instructions on how to proof your score onchain</p>
+      </div>
+    </div>
   </body>
 </html>
