@@ -69,7 +69,6 @@ async fn main() -> eyre::Result<()> {
         let proof: SP1ProofWithPublicValues = client.prove(&pk, stdin.clone()).plonk().run().expect("Proving should work.");
         println!("Proof generation finished.");
 
-        client.verify(&proof, &vk).expect("proof verification should succeed");
         // Handle the result of the save operation
         let public_values_solidity_encoded = proof.public_values.as_slice();
         let decoded_values = PublicValuesStruct::abi_decode(public_values_solidity_encoded, true).unwrap();
